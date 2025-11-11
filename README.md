@@ -364,10 +364,17 @@ docker-compose down
 
 ## 📄 License
 
-This project uses:
-- **OpenAI Whisper**: Licensed under MIT License
-- **Tesseract OCR**: Licensed under Apache License 2.0
-- **Other dependencies**: See requirements.txt for individual licenses
+This project is licensed under the **MIT License** - see the [LICENSE](LICENSE) file for details.
+
+### Third-Party Components
+
+This software uses the following open-source components:
+
+- **OpenAI Whisper**: MIT License - Copyright (c) 2022 OpenAI
+- **Tesseract OCR**: Apache License 2.0 - Copyright (c) Google Inc.
+- **Other dependencies**: See `requirements.txt` for individual licenses
+
+All third-party components maintain their original licenses. Please refer to the [LICENSE](LICENSE) file for complete license information and third-party attributions.
 
 ## 🤝 Contributing
 
