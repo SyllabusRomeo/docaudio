@@ -89,6 +89,12 @@ try:
 except ImportError:
     PDF2IMAGE_AVAILABLE = False
 
+try:
+    from deep_translator import GoogleTranslator
+    TRANSLATION_AVAILABLE = True
+except ImportError:
+    TRANSLATION_AVAILABLE = False
+
 app = Flask(__name__)
 CORS(app)
 
@@ -349,6 +355,47 @@ def perform_ocr(filepath):
     
     return '\n\n'.join(text_parts)
 
+def translate_text(text, target_language='en'):
+    """
+    Translate text to target language.
+    
+    Args:
+        text: Text to translate
+        target_language: Target language code (en, fr, es, de, nl)
+    
+    Returns:
+        Translated text
+    """
+    if not TRANSLATION_AVAILABLE:
+        raise Exception("Translation library not available")
+    
+    if not text or not text.strip():
+        return text
+    
+    # Language code mapping
+    language_map = {
+        'en': 'en',
+        'english': 'en',
+        'fr': 'fr',
+        'french': 'fr',
+        'es': 'es',
+        'spanish': 'es',
+        'de': 'de',
+        'german': 'de',
+        'nl': 'nl',
+        'dutch': 'nl'
+    }
+    
+    target_lang = language_map.get(target_language.lower(), 'en')
+    
+    try:
+        # Use Google Translator (free, no API key needed)
+        translator = GoogleTranslator(source='auto', target=target_lang)
+        translated_text = translator.translate(text)
+        return translated_text
+    except Exception as e:
+        raise Exception(f"Translation failed: {str(e)}")
+
 @app.route('/')
 def index():
     return render_template('index.html')
@@ -409,11 +456,40 @@ def upload_file():
         
         # Extract transcription text
         transcription_text = result["text"]
+        detected_language = result.get('language', 'unknown')
         
         # Format transcription with sentences on separate lines
         formatted_text = format_transcription_with_sentences(transcription_text)
         
-        # Save transcription to file
+        # Get target language for translation (default: English)
+        target_language = request.form.get('target_language', 'en').lower()
+        
+        # Translate if requested and translation is available
+        translated_text = None
+        translation_time = 0
+        translation_filename = None
+        
+        if target_language and target_language != 'en' and TRANSLATION_AVAILABLE:
+            try:
+                translation_start = time.time()
+                translated_text = translate_text(formatted_text, target_language)
+                translated_text = format_transcription_with_sentences(translated_text)
+                translation_time = time.time() - translation_start
+                
+                # Save translated version
+                base_name = os.path.splitext(filename)[0]
+                lang_codes = {'fr': 'french', 'es': 'spanish', 'de': 'german', 'nl': 'dutch', 'en': 'english'}
+                lang_name = lang_codes.get(target_language, target_language)
+                translation_filename = f"{base_name}_{lang_name}.txt"
+                translation_path = os.path.join('transcriptions', translation_filename)
+                
+                with open(translation_path, 'w', encoding='utf-8') as f:
+                    f.write(translated_text)
+            except Exception as e:
+                print(f"Translation failed: {str(e)}")
+                translated_text = None
+        
+        # Save original transcription to file
         transcription_filename = os.path.splitext(filename)[0] + '.txt'
         transcription_path = os.path.join('transcriptions', transcription_filename)
         
@@ -428,16 +504,26 @@ def upload_file():
         processing_time = end_time - start_time
         transcription_time = transcription_end - transcription_start
         
-        return jsonify({
+        response_data = {
             'success': True,
             'transcription': formatted_text,
             'filename': transcription_filename,
-            'language': result.get('language', 'unknown'),
+            'language': detected_language,
             'download_url': f'/download/{transcription_filename}',
             'processing_time': round(processing_time, 2),
             'transcription_time': round(transcription_time, 2),
             'model_load_time': round(model_load_time, 2)
-        })
+        }
+        
+        # Add translation data if available
+        if translated_text:
+            response_data['translated_text'] = translated_text
+            response_data['translation_filename'] = translation_filename
+            response_data['translation_download_url'] = f'/download/{translation_filename}'
+            response_data['translation_time'] = round(translation_time, 2)
+            response_data['target_language'] = target_language
+        
+        return jsonify(response_data)
     
     except Exception as e:
         # Clean up on error
@@ -670,6 +756,21 @@ def ocr_capabilities():
         'pdf2image_available': PDF2IMAGE_AVAILABLE,
         'supported_formats': list(ALLOWED_IMAGE_EXTENSIONS) + ['pdf'] if OCR_AVAILABLE else [],
         'message': 'OCR is available' if OCR_AVAILABLE else 'OCR requires pytesseract and Tesseract OCR engine installation'
+    })
+
+@app.route('/translation-capabilities', methods=['GET'])
+def translation_capabilities():
+    """Get translation capabilities and status"""
+    return jsonify({
+        'available': TRANSLATION_AVAILABLE,
+        'supported_languages': {
+            'en': 'English',
+            'fr': 'French',
+            'es': 'Spanish',
+            'de': 'German',
+            'nl': 'Dutch'
+        },
+        'message': 'Translation is available' if TRANSLATION_AVAILABLE else 'Translation requires deep-translator library installation'
     })
 
 if __name__ == '__main__':

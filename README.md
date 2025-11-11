@@ -11,8 +11,10 @@ A comprehensive web-based application that provides three powerful features:
 - **Multiple Audio Format Support**: MP3, WAV, M4A, FLAC, OGG, OPUS, AAC, WMA, MP4, WebM, 3GP, AMR, AIFF, AU
 - **Automatic Language Detection**: Automatically detects the language in your audio
 - **High-Quality Transcription**: Powered by OpenAI's Whisper model (base model by default)
+- **Translation Support**: Translate transcriptions to English, French, Spanish, German, or Dutch
 - **Real-time Progress Tracking**: Visual feedback with elapsed time and processing steps
 - **Sentence Formatting**: Automatically formats transcriptions with sentences on separate lines
+- **Dual Output**: View both original and translated text side-by-side
 
 ### 📄 Document Conversion
 - **DOCX Conversions**: DOCX ↔ TXT, DOCX ↔ PDF
@@ -160,9 +162,10 @@ http://localhost:5012
 
 1. Click the **"🎤 Audio Transcription"** tab
 2. Drag and drop an audio file or click to browse
-3. Click **"Transcribe Audio"**
-4. Wait for processing (you'll see real-time progress)
-5. View and download the transcription
+3. (Optional) Select a target language for translation (English, French, Spanish, German, or Dutch)
+4. Click **"Transcribe Audio"**
+5. Wait for processing (you'll see real-time progress)
+6. View and download the transcription (and translation if requested)
 
 ### Using Document Conversion
 
@@ -251,10 +254,11 @@ audiotranscribe/
 
 ### Audio Transcription
 - `GET /` - Main web interface
-- `POST /upload` - Upload and transcribe audio file
+- `POST /upload` - Upload and transcribe audio file (supports `target_language` parameter)
 - `GET /download/<filename>` - Download transcription file
 - `GET /supported-formats` - Get list of supported audio formats
 - `GET /check-ffmpeg` - Check FFmpeg installation status
+- `GET /translation-capabilities` - Get translation capabilities and supported languages
 
 ### Document Conversion
 - `POST /convert-document` - Convert document between formats

@@ -393,6 +393,20 @@
             <div class="file-size" id="fileSize"></div>
         </div>
 
+        <div class="format-selector">
+            <label for="targetLanguage">Translate to (optional):</label>
+            <select id="targetLanguage">
+                <option value="en">English (Default - Original)</option>
+                <option value="fr">French</option>
+                <option value="es">Spanish</option>
+                <option value="de">German</option>
+                <option value="nl">Dutch</option>
+            </select>
+            <small style="display: block; margin-top: 5px; color: #666; font-size: 0.85em;">
+                Select a language to translate the transcription. Original transcription is always saved.
+            </small>
+        </div>
+
         <button class="btn" id="transcribeBtn" disabled>Transcribe Audio</button>
 
         <div class="progress-container" id="progressContainer">
@@ -408,11 +422,18 @@
 
         <div class="result-container" id="resultContainer">
             <div class="final-time" id="finalTime" style="display: none;"></div>
+            <div class="result-box" id="translationResultBox" style="display: none;">
+                <span class="result-label">Original Transcription:</span>
+                <div class="result-text" id="originalResultText" style="max-height: 200px; font-size: 0.9em;"></div>
+            </div>
             <div class="result-box">
-                <span class="result-label">Transcription Result:</span>
+                <span class="result-label" id="resultLabel">Transcription Result:</span>
                 <div class="result-text" id="resultText"></div>
             </div>
-            <button class="btn download-btn" id="downloadBtn">Download as Text File</button>
+            <div style="display: flex; gap: 10px; margin-top: 10px;">
+                <button class="btn download-btn" id="downloadBtn" style="flex: 1;">Download as Text File</button>
+                <button class="btn download-btn" id="downloadOriginalBtn" style="flex: 1; display: none; background: #667eea;">Download Original</button>
+            </div>
         </div>
 
             <div class="supported-formats">
@@ -523,9 +544,11 @@
         const timeDisplay = document.getElementById('timeDisplay');
         const processingSteps = document.getElementById('processingSteps');
         const finalTime = document.getElementById('finalTime');
+        const targetLanguage = document.getElementById('targetLanguage');
 
         let selectedFile = null;
         let transcriptionFilename = null;
+        let translationFilename = null;
         let timerInterval = null;
         let startTime = null;
 
@@ -627,24 +650,25 @@
             transcribeBtn.disabled = true;
             progressFill.style.width = '10%';
             statusInfo.textContent = 'Preparing upload...';
-            processingSteps.textContent = 'Step 1 of 4: Initializing...';
+            processingSteps.textContent = 'Step 1 of 5: Initializing...';
             
             // Start timer
             startTimer();
 
             const formData = new FormData();
             formData.append('file', selectedFile);
+            formData.append('target_language', targetLanguage.value);
 
             try {
                 // Step 1: Uploading
                 progressFill.style.width = '20%';
                 statusInfo.textContent = 'Uploading file to server...';
-                processingSteps.textContent = 'Step 1 of 4: Uploading file...';
+                processingSteps.textContent = 'Step 1 of 5: Uploading file...';
 
                 // Step 2: Processing
                 progressFill.style.width = '30%';
                 statusInfo.textContent = 'File uploaded. Starting transcription...';
-                processingSteps.textContent = 'Step 2 of 4: Loading Whisper model...';
+                processingSteps.textContent = 'Step 2 of 5: Loading Whisper model...';
 
                 const response = await fetch('/upload', {
                     method: 'POST',
@@ -653,12 +677,12 @@
 
                 // Update progress while waiting
                 progressFill.style.width = '40%';
-                processingSteps.textContent = 'Step 3 of 4: Transcribing audio (this may take a while)...';
+                processingSteps.textContent = 'Step 3 of 5: Transcribing audio (this may take a while)...';
                 
                 // Simulate progress updates during transcription
                 let progressValue = 40;
                 const progressInterval = setInterval(() => {
-                    if (progressValue < 85) {
+                    if (progressValue < (targetLanguage.value !== 'en' ? 75 : 85)) {
                         progressValue += 0.5;
                         progressFill.style.width = progressValue + '%';
                     }
@@ -671,18 +695,47 @@
                     throw new Error(data.error || 'Transcription failed');
                 }
 
+                // Step 4: Translation (if requested)
+                if (targetLanguage.value !== 'en' && data.translated_text) {
+                    progressFill.style.width = '90%';
+                    statusInfo.textContent = 'Translating transcription...';
+                    processingSteps.textContent = 'Step 4 of 5: Translating to ' + targetLanguage.options[targetLanguage.selectedIndex].text.split(' ')[0] + '...';
+                } else {
+                    progressFill.style.width = '90%';
+                    processingSteps.textContent = 'Step 4 of 5: Finalizing...';
+                }
+
                 // Stop timer
                 stopTimer();
 
-                // Step 4: Complete
+                // Step 5: Complete
                 progressFill.style.width = '100%';
                 statusInfo.textContent = 'Transcription complete!';
-                processingSteps.textContent = 'Step 4 of 4: Finalizing...';
+                processingSteps.textContent = 'Step 5 of 5: Complete!';
 
                 // Show results
                 setTimeout(() => {
-                    resultText.textContent = data.transcription;
-                    transcriptionFilename = data.filename;
+                    // Display original or translated text based on selection
+                    if (data.translated_text && targetLanguage.value !== 'en') {
+                        // Show translated text as main result
+                        resultLabel.textContent = 'Translated Transcription (' + targetLanguage.options[targetLanguage.selectedIndex].text.split(' ')[0] + '):';
+                        resultText.textContent = data.translated_text;
+                        transcriptionFilename = data.translation_filename;
+                        
+                        // Show original in a separate box
+                        originalResultText.textContent = data.transcription;
+                        translationFilename = data.filename; // Original filename
+                        translationResultBox.style.display = 'block';
+                        downloadOriginalBtn.style.display = 'block';
+                    } else {
+                        // Show original only
+                        resultLabel.textContent = 'Transcription Result:';
+                        resultText.textContent = data.transcription;
+                        transcriptionFilename = data.filename;
+                        translationFilename = null;
+                        translationResultBox.style.display = 'none';
+                        downloadOriginalBtn.style.display = 'none';
+                    }
                     
                     // Display processing time
                     if (data.processing_time) {
@@ -704,8 +757,20 @@
                             timeDetails += `\n🎤 Transcription took ${data.transcription_time.toFixed(2)} seconds`;
                         }
                         
+                        // Add translation time if available
+                        if (data.translation_time) {
+                            timeDetails += `\n🌍 Translation took ${data.translation_time.toFixed(2)} seconds`;
+                        }
+                        
                         finalTime.textContent = timeDetails;
                         finalTime.style.display = 'block';
+                    }
+                    
+                    // Update download button text
+                    if (data.translated_text && targetLanguage.value !== 'en') {
+                        downloadBtn.textContent = 'Download Translated Text';
+                    } else {
+                        downloadBtn.textContent = 'Download as Text File';
                     }
                     
                     resultContainer.classList.add('show');
@@ -731,9 +796,20 @@
             }
         });
 
+        const downloadOriginalBtn = document.getElementById('downloadOriginalBtn');
+        const originalResultText = document.getElementById('originalResultText');
+        const translationResultBox = document.getElementById('translationResultBox');
+        const resultLabel = document.getElementById('resultLabel');
+
         downloadBtn.addEventListener('click', () => {
             if (transcriptionFilename) {
                 window.location.href = `/download/${transcriptionFilename}`;
+            }
+        });
+
+        downloadOriginalBtn.addEventListener('click', () => {
+            if (translationFilename) {
+                window.location.href = `/download/${translationFilename}`;
             }
         });
 
