@@ -1,0 +1,1067 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document & Audio Processing Service</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            max-width: 800px;
+            width: 100%;
+            padding: 40px;
+        }
+
+        h1 {
+            color: #333;
+            text-align: center;
+            margin-bottom: 10px;
+            font-size: 2.5em;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 1.1em;
+        }
+
+        .upload-area {
+            border: 3px dashed #667eea;
+            border-radius: 15px;
+            padding: 60px 20px;
+            text-align: center;
+            background: #f8f9ff;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            margin-bottom: 20px;
+        }
+
+        .upload-area:hover {
+            border-color: #764ba2;
+            background: #f0f2ff;
+        }
+
+        .upload-area.dragover {
+            border-color: #764ba2;
+            background: #e8ebff;
+            transform: scale(1.02);
+        }
+
+        .upload-icon {
+            font-size: 4em;
+            margin-bottom: 20px;
+            color: #667eea;
+        }
+
+        .upload-text {
+            font-size: 1.2em;
+            color: #333;
+            margin-bottom: 10px;
+        }
+
+        .upload-hint {
+            color: #666;
+            font-size: 0.9em;
+        }
+
+        #fileInput {
+            display: none;
+        }
+
+        .file-info {
+            background: #e8ebff;
+            padding: 15px;
+            border-radius: 10px;
+            margin: 20px 0;
+            display: none;
+        }
+
+        .file-info.show {
+            display: block;
+        }
+
+        .file-name {
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 5px;
+        }
+
+        .file-size {
+            color: #666;
+            font-size: 0.9em;
+        }
+
+        .btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 15px 40px;
+            border-radius: 10px;
+            font-size: 1.1em;
+            cursor: pointer;
+            width: 100%;
+            transition: all 0.3s ease;
+            font-weight: 600;
+            margin-top: 10px;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+        }
+
+        .btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .progress-container {
+            display: none;
+            margin: 20px 0;
+        }
+
+        .progress-container.show {
+            display: block;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 30px;
+            background: #e0e0e0;
+            border-radius: 15px;
+            overflow: hidden;
+            margin-bottom: 10px;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+            width: 0%;
+            transition: width 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+        }
+
+        .result-container {
+            display: none;
+            margin-top: 30px;
+        }
+
+        .result-container.show {
+            display: block;
+        }
+
+        .result-box {
+            background: #f8f9ff;
+            border: 2px solid #667eea;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        .result-label {
+            font-weight: bold;
+            color: #667eea;
+            margin-bottom: 10px;
+            display: block;
+        }
+
+        .result-text {
+            color: #333;
+            line-height: 1.8;
+            white-space: pre-line;
+            word-wrap: break-word;
+            max-height: 400px;
+            overflow-y: auto;
+            padding: 15px;
+            background: white;
+            border-radius: 5px;
+            font-size: 1.05em;
+        }
+
+        .download-btn {
+            background: #28a745;
+            margin-top: 10px;
+        }
+
+        .download-btn:hover {
+            background: #218838;
+        }
+
+        .error-message {
+            background: #fee;
+            border: 2px solid #fcc;
+            color: #c33;
+            padding: 15px;
+            border-radius: 10px;
+            margin: 20px 0;
+            display: none;
+        }
+
+        .error-message.show {
+            display: block;
+        }
+
+        .supported-formats {
+            background: #f0f2ff;
+            padding: 15px;
+            border-radius: 10px;
+            margin-top: 20px;
+        }
+
+        .supported-formats h3 {
+            color: #667eea;
+            margin-bottom: 10px;
+            font-size: 1.1em;
+        }
+
+        .format-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .format-tag {
+            background: white;
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 0.85em;
+            color: #667eea;
+            border: 1px solid #667eea;
+        }
+
+        .loading-spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .status-info {
+            text-align: center;
+            color: #666;
+            margin-top: 10px;
+        }
+
+        .time-display {
+            text-align: center;
+            color: #667eea;
+            font-size: 1.2em;
+            font-weight: bold;
+            margin: 10px 0;
+            font-family: 'Courier New', monospace;
+        }
+
+        .processing-steps {
+            text-align: center;
+            color: #666;
+            font-size: 0.95em;
+            margin-top: 5px;
+            min-height: 20px;
+        }
+
+        .final-time {
+            background: #e8f5e9;
+            border: 1px solid #4caf50;
+            border-radius: 8px;
+            padding: 15px;
+            margin: 15px 0;
+            text-align: center;
+            color: #2e7d32;
+            font-weight: 600;
+            white-space: pre-line;
+            line-height: 1.6;
+        }
+
+        .tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 30px;
+            border-bottom: 2px solid #e0e0e0;
+        }
+
+        .tab {
+            padding: 12px 24px;
+            background: transparent;
+            border: none;
+            border-bottom: 3px solid transparent;
+            cursor: pointer;
+            font-size: 1em;
+            font-weight: 600;
+            color: #666;
+            transition: all 0.3s ease;
+        }
+
+        .tab:hover {
+            color: #667eea;
+        }
+
+        .tab.active {
+            color: #667eea;
+            border-bottom-color: #667eea;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .format-selector {
+            margin: 20px 0;
+        }
+
+        .format-selector label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .format-selector select {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 1em;
+            background: white;
+            cursor: pointer;
+        }
+
+        .format-selector select:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📄 Document & Audio Processing</h1>
+        <p class="subtitle">Transcribe audio, convert documents, and extract text from images</p>
+
+        <div class="tabs">
+            <button class="tab active" data-tab="transcription">🎤 Audio Transcription</button>
+            <button class="tab" data-tab="conversion">📄 Document Conversion</button>
+            <button class="tab" data-tab="ocr">👁️ OCR (Text Extraction)</button>
+        </div>
+
+        <!-- Audio Transcription Tab -->
+        <div class="tab-content active" id="transcriptionTab">
+
+        <div class="upload-area" id="uploadArea">
+            <div class="upload-icon">📁</div>
+            <div class="upload-text">Drag & Drop your audio file here</div>
+            <div class="upload-hint">or click to browse</div>
+            <input type="file" id="fileInput" accept="audio/*,video/*">
+        </div>
+
+        <div class="file-info" id="fileInfo">
+            <div class="file-name" id="fileName"></div>
+            <div class="file-size" id="fileSize"></div>
+        </div>
+
+        <button class="btn" id="transcribeBtn" disabled>Transcribe Audio</button>
+
+        <div class="progress-container" id="progressContainer">
+            <div class="progress-bar">
+                <div class="progress-fill" id="progressFill">Processing...</div>
+            </div>
+            <div class="time-display" id="timeDisplay">00:00</div>
+            <div class="status-info" id="statusInfo">Uploading and processing your audio file...</div>
+            <div class="processing-steps" id="processingSteps"></div>
+        </div>
+
+        <div class="error-message" id="errorMessage"></div>
+
+        <div class="result-container" id="resultContainer">
+            <div class="final-time" id="finalTime" style="display: none;"></div>
+            <div class="result-box">
+                <span class="result-label">Transcription Result:</span>
+                <div class="result-text" id="resultText"></div>
+            </div>
+            <button class="btn download-btn" id="downloadBtn">Download as Text File</button>
+        </div>
+
+            <div class="supported-formats">
+                <h3>Supported Audio Formats</h3>
+                <div class="format-tags" id="formatTags"></div>
+            </div>
+        </div>
+
+        <!-- Document Conversion Tab -->
+        <div class="tab-content" id="conversionTab">
+            <h2 style="text-align: center; margin-bottom: 20px; color: #333;">Document Conversion</h2>
+            <p style="text-align: center; color: #666; margin-bottom: 30px;">Convert documents between different formats</p>
+
+            <div class="upload-area" id="conversionUploadArea">
+                <div class="upload-icon">📁</div>
+                <div class="upload-text">Drag & Drop your document here</div>
+                <div class="upload-hint">or click to browse</div>
+                <input type="file" id="conversionFileInput" accept=".docx,.doc,.pdf,.txt,.xlsx,.xls">
+            </div>
+
+            <div class="file-info" id="conversionFileInfo">
+                <div class="file-name" id="conversionFileName"></div>
+                <div class="file-size" id="conversionFileSize"></div>
+            </div>
+
+            <div class="format-selector">
+                <label for="targetFormat">Convert to:</label>
+                <select id="targetFormat">
+                    <option value="">Select target format...</option>
+                </select>
+            </div>
+
+            <button class="btn" id="convertBtn" disabled>Convert Document</button>
+
+            <div class="progress-container" id="conversionProgressContainer">
+                <div class="progress-bar">
+                    <div class="progress-fill" id="conversionProgressFill">Processing...</div>
+                </div>
+                <div class="time-display" id="conversionTimeDisplay">00:00</div>
+                <div class="status-info" id="conversionStatusInfo">Processing conversion...</div>
+            </div>
+
+            <div class="error-message" id="conversionErrorMessage"></div>
+
+            <div class="result-container" id="conversionResultContainer">
+                <div class="result-box">
+                    <span class="result-label">Conversion Complete!</span>
+                    <div class="result-text" id="conversionResultText"></div>
+                </div>
+                <button class="btn download-btn" id="conversionDownloadBtn">Download Converted File</button>
+            </div>
+        </div>
+
+        <!-- OCR Tab -->
+        <div class="tab-content" id="ocrTab">
+            <h2 style="text-align: center; margin-bottom: 20px; color: #333;">OCR - Text Extraction</h2>
+            <p style="text-align: center; color: #666; margin-bottom: 30px;">Extract text from images and PDF files</p>
+
+            <div class="upload-area" id="ocrUploadArea">
+                <div class="upload-icon">🖼️</div>
+                <div class="upload-text">Drag & Drop your image or PDF here</div>
+                <div class="upload-hint">or click to browse</div>
+                <input type="file" id="ocrFileInput" accept="image/*,.pdf">
+            </div>
+
+            <div class="file-info" id="ocrFileInfo">
+                <div class="file-name" id="ocrFileName"></div>
+                <div class="file-size" id="ocrFileSize"></div>
+            </div>
+
+            <button class="btn" id="ocrBtn" disabled>Extract Text (OCR)</button>
+
+            <div class="progress-container" id="ocrProgressContainer">
+                <div class="progress-bar">
+                    <div class="progress-fill" id="ocrProgressFill">Processing...</div>
+                </div>
+                <div class="time-display" id="ocrTimeDisplay">00:00</div>
+                <div class="status-info" id="ocrStatusInfo">Performing OCR...</div>
+            </div>
+
+            <div class="error-message" id="ocrErrorMessage"></div>
+
+            <div class="result-container" id="ocrResultContainer">
+                <div class="final-time" id="ocrFinalTime" style="display: none;"></div>
+                <div class="result-box">
+                    <span class="result-label">Extracted Text:</span>
+                    <div class="result-text" id="ocrResultText"></div>
+                </div>
+                <button class="btn download-btn" id="ocrDownloadBtn">Download as Text File</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const uploadArea = document.getElementById('uploadArea');
+        const fileInput = document.getElementById('fileInput');
+        const fileInfo = document.getElementById('fileInfo');
+        const fileName = document.getElementById('fileName');
+        const fileSize = document.getElementById('fileSize');
+        const transcribeBtn = document.getElementById('transcribeBtn');
+        const progressContainer = document.getElementById('progressContainer');
+        const progressFill = document.getElementById('progressFill');
+        const statusInfo = document.getElementById('statusInfo');
+        const errorMessage = document.getElementById('errorMessage');
+        const resultContainer = document.getElementById('resultContainer');
+        const resultText = document.getElementById('resultText');
+        const downloadBtn = document.getElementById('downloadBtn');
+        const timeDisplay = document.getElementById('timeDisplay');
+        const processingSteps = document.getElementById('processingSteps');
+        const finalTime = document.getElementById('finalTime');
+
+        let selectedFile = null;
+        let transcriptionFilename = null;
+        let timerInterval = null;
+        let startTime = null;
+
+        // Load supported formats on page load
+        fetch('/supported-formats')
+            .then(res => res.json())
+            .then(data => {
+                const formatTags = document.getElementById('formatTags');
+                data.formats.forEach(format => {
+                    const tag = document.createElement('span');
+                    tag.className = 'format-tag';
+                    tag.textContent = format.toUpperCase();
+                    formatTags.appendChild(tag);
+                });
+            });
+
+        // Click to upload
+        uploadArea.addEventListener('click', () => fileInput.click());
+
+        // Drag and drop
+        uploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadArea.classList.add('dragover');
+        });
+
+        uploadArea.addEventListener('dragleave', () => {
+            uploadArea.classList.remove('dragover');
+        });
+
+        uploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadArea.classList.remove('dragover');
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                handleFileSelect(files[0]);
+            }
+        });
+
+        // File input change
+        fileInput.addEventListener('change', (e) => {
+            if (e.target.files.length > 0) {
+                handleFileSelect(e.target.files[0]);
+            }
+        });
+
+        function handleFileSelect(file) {
+            selectedFile = file;
+            fileName.textContent = file.name;
+            fileSize.textContent = formatFileSize(file.size);
+            fileInfo.classList.add('show');
+            transcribeBtn.disabled = false;
+            errorMessage.classList.remove('show');
+            resultContainer.classList.remove('show');
+        }
+
+        function formatFileSize(bytes) {
+            if (bytes === 0) return '0 Bytes';
+            const k = 1024;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
+        }
+
+        function formatTime(seconds) {
+            const mins = Math.floor(seconds / 60);
+            const secs = Math.floor(seconds % 60);
+            return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+        }
+
+        function startTimer() {
+            startTime = Date.now();
+            timeDisplay.textContent = '00:00';
+            
+            if (timerInterval) {
+                clearInterval(timerInterval);
+            }
+            
+            timerInterval = setInterval(() => {
+                const elapsed = (Date.now() - startTime) / 1000;
+                timeDisplay.textContent = formatTime(elapsed);
+            }, 100); // Update every 100ms for smooth display
+        }
+
+        function stopTimer() {
+            if (timerInterval) {
+                clearInterval(timerInterval);
+                timerInterval = null;
+            }
+        }
+
+        transcribeBtn.addEventListener('click', async () => {
+            if (!selectedFile) return;
+
+            // Reset UI
+            errorMessage.classList.remove('show');
+            resultContainer.classList.remove('show');
+            finalTime.style.display = 'none';
+            progressContainer.classList.add('show');
+            transcribeBtn.disabled = true;
+            progressFill.style.width = '10%';
+            statusInfo.textContent = 'Preparing upload...';
+            processingSteps.textContent = 'Step 1 of 4: Initializing...';
+            
+            // Start timer
+            startTimer();
+
+            const formData = new FormData();
+            formData.append('file', selectedFile);
+
+            try {
+                // Step 1: Uploading
+                progressFill.style.width = '20%';
+                statusInfo.textContent = 'Uploading file to server...';
+                processingSteps.textContent = 'Step 1 of 4: Uploading file...';
+
+                // Step 2: Processing
+                progressFill.style.width = '30%';
+                statusInfo.textContent = 'File uploaded. Starting transcription...';
+                processingSteps.textContent = 'Step 2 of 4: Loading Whisper model...';
+
+                const response = await fetch('/upload', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                // Update progress while waiting
+                progressFill.style.width = '40%';
+                processingSteps.textContent = 'Step 3 of 4: Transcribing audio (this may take a while)...';
+                
+                // Simulate progress updates during transcription
+                let progressValue = 40;
+                const progressInterval = setInterval(() => {
+                    if (progressValue < 85) {
+                        progressValue += 0.5;
+                        progressFill.style.width = progressValue + '%';
+                    }
+                }, 500);
+
+                const data = await response.json();
+                clearInterval(progressInterval);
+
+                if (!response.ok) {
+                    throw new Error(data.error || 'Transcription failed');
+                }
+
+                // Stop timer
+                stopTimer();
+
+                // Step 4: Complete
+                progressFill.style.width = '100%';
+                statusInfo.textContent = 'Transcription complete!';
+                processingSteps.textContent = 'Step 4 of 4: Finalizing...';
+
+                // Show results
+                setTimeout(() => {
+                    resultText.textContent = data.transcription;
+                    transcriptionFilename = data.filename;
+                    
+                    // Display processing time
+                    if (data.processing_time) {
+                        const minutes = Math.floor(data.processing_time / 60);
+                        const seconds = Math.floor(data.processing_time % 60);
+                        const timeString = minutes > 0 
+                            ? `${minutes} minute${minutes > 1 ? 's' : ''} and ${seconds} second${seconds !== 1 ? 's' : ''}`
+                            : `${seconds} second${seconds !== 1 ? 's' : ''}`;
+                        
+                        let timeDetails = `⏱️ Processing completed in ${timeString} (${data.processing_time.toFixed(2)} seconds)`;
+                        
+                        // Add model load time if available and > 0 (first request)
+                        if (data.model_load_time && data.model_load_time > 0) {
+                            timeDetails += `\n📦 Model loaded in ${data.model_load_time.toFixed(2)} seconds (first time only)`;
+                        }
+                        
+                        // Add transcription time breakdown
+                        if (data.transcription_time) {
+                            timeDetails += `\n🎤 Transcription took ${data.transcription_time.toFixed(2)} seconds`;
+                        }
+                        
+                        finalTime.textContent = timeDetails;
+                        finalTime.style.display = 'block';
+                    }
+                    
+                    resultContainer.classList.add('show');
+                    progressContainer.classList.remove('show');
+                    transcribeBtn.disabled = false;
+                    
+                    // Reset for new upload
+                    selectedFile = null;
+                    fileInfo.classList.remove('show');
+                    fileInput.value = '';
+                    timeDisplay.textContent = '00:00';
+                    processingSteps.textContent = '';
+                }, 500);
+
+            } catch (error) {
+                stopTimer();
+                errorMessage.textContent = error.message;
+                errorMessage.classList.add('show');
+                progressContainer.classList.remove('show');
+                transcribeBtn.disabled = false;
+                timeDisplay.textContent = '00:00';
+                processingSteps.textContent = '';
+            }
+        });
+
+        downloadBtn.addEventListener('click', () => {
+            if (transcriptionFilename) {
+                window.location.href = `/download/${transcriptionFilename}`;
+            }
+        });
+
+        // Tab switching functionality
+        const tabs = document.querySelectorAll('.tab');
+        const tabContents = document.querySelectorAll('.tab-content');
+
+        tabs.forEach(tab => {
+            tab.addEventListener('click', () => {
+                const targetTab = tab.getAttribute('data-tab');
+                
+                // Remove active class from all tabs and contents
+                tabs.forEach(t => t.classList.remove('active'));
+                tabContents.forEach(tc => tc.classList.remove('active'));
+                
+                // Add active class to clicked tab and corresponding content
+                tab.classList.add('active');
+                document.getElementById(targetTab + 'Tab').classList.add('active');
+            });
+        });
+
+        // Document Conversion functionality
+        const conversionUploadArea = document.getElementById('conversionUploadArea');
+        const conversionFileInput = document.getElementById('conversionFileInput');
+        const conversionFileInfo = document.getElementById('conversionFileInfo');
+        const conversionFileName = document.getElementById('conversionFileName');
+        const conversionFileSize = document.getElementById('conversionFileSize');
+        const targetFormat = document.getElementById('targetFormat');
+        const convertBtn = document.getElementById('convertBtn');
+        const conversionProgressContainer = document.getElementById('conversionProgressContainer');
+        const conversionProgressFill = document.getElementById('conversionProgressFill');
+        const conversionTimeDisplay = document.getElementById('conversionTimeDisplay');
+        const conversionStatusInfo = document.getElementById('conversionStatusInfo');
+        const conversionErrorMessage = document.getElementById('conversionErrorMessage');
+        const conversionResultContainer = document.getElementById('conversionResultContainer');
+        const conversionDownloadBtn = document.getElementById('conversionDownloadBtn');
+
+        let conversionSelectedFile = null;
+        let conversionFilename = null;
+        let conversionTimerInterval = null;
+        let conversionStartTime = null;
+
+        // Load supported conversions
+        fetch('/supported-conversions')
+            .then(res => res.json())
+            .then(data => {
+                // This will be populated when a file is selected
+            });
+
+        conversionUploadArea.addEventListener('click', () => conversionFileInput.click());
+        conversionUploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            conversionUploadArea.classList.add('dragover');
+        });
+        conversionUploadArea.addEventListener('dragleave', () => {
+            conversionUploadArea.classList.remove('dragover');
+        });
+        conversionUploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            conversionUploadArea.classList.remove('dragover');
+            if (e.dataTransfer.files.length > 0) {
+                handleConversionFileSelect(e.dataTransfer.files[0]);
+            }
+        });
+
+        conversionFileInput.addEventListener('change', (e) => {
+            if (e.target.files.length > 0) {
+                handleConversionFileSelect(e.target.files[0]);
+            }
+        });
+
+        function handleConversionFileSelect(file) {
+            conversionSelectedFile = file;
+            conversionFileName.textContent = file.name;
+            conversionFileSize.textContent = formatFileSize(file.size);
+            conversionFileInfo.classList.add('show');
+            conversionErrorMessage.classList.remove('show');
+            conversionResultContainer.classList.remove('show');
+
+            // Get file extension
+            const ext = file.name.split('.').pop().toLowerCase();
+            
+            // Load available conversions for this file type
+            fetch('/supported-conversions')
+                .then(res => res.json())
+                .then(data => {
+                    targetFormat.innerHTML = '<option value="">Select target format...</option>';
+                    if (data.conversions[ext]) {
+                        data.conversions[ext].forEach(format => {
+                            const option = document.createElement('option');
+                            option.value = format;
+                            option.textContent = format.toUpperCase();
+                            targetFormat.appendChild(option);
+                        });
+                    }
+                    convertBtn.disabled = !targetFormat.value;
+                });
+        }
+
+        targetFormat.addEventListener('change', () => {
+            convertBtn.disabled = !targetFormat.value || !conversionSelectedFile;
+        });
+
+        function startConversionTimer() {
+            conversionStartTime = Date.now();
+            conversionTimeDisplay.textContent = '00:00';
+            if (conversionTimerInterval) clearInterval(conversionTimerInterval);
+            conversionTimerInterval = setInterval(() => {
+                const elapsed = (Date.now() - conversionStartTime) / 1000;
+                conversionTimeDisplay.textContent = formatTime(elapsed);
+            }, 100);
+        }
+
+        function stopConversionTimer() {
+            if (conversionTimerInterval) {
+                clearInterval(conversionTimerInterval);
+                conversionTimerInterval = null;
+            }
+        }
+
+        convertBtn.addEventListener('click', async () => {
+            if (!conversionSelectedFile || !targetFormat.value) return;
+
+            conversionErrorMessage.classList.remove('show');
+            conversionResultContainer.classList.remove('show');
+            conversionProgressContainer.classList.add('show');
+            convertBtn.disabled = true;
+            conversionProgressFill.style.width = '20%';
+            conversionStatusInfo.textContent = 'Uploading file...';
+            startConversionTimer();
+
+            const formData = new FormData();
+            formData.append('file', conversionSelectedFile);
+            formData.append('target_format', targetFormat.value);
+
+            try {
+                conversionProgressFill.style.width = '50%';
+                conversionStatusInfo.textContent = 'Converting document...';
+
+                const response = await fetch('/convert-document', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const data = await response.json();
+                stopConversionTimer();
+
+                if (!response.ok) {
+                    throw new Error(data.error || 'Conversion failed');
+                }
+
+                conversionProgressFill.style.width = '100%';
+                conversionStatusInfo.textContent = 'Complete!';
+                conversionFilename = data.filename;
+
+                setTimeout(() => {
+                    conversionResultContainer.classList.add('show');
+                    conversionProgressContainer.classList.remove('show');
+                    convertBtn.disabled = false;
+                    conversionSelectedFile = null;
+                    conversionFileInfo.classList.remove('show');
+                    conversionFileInput.value = '';
+                    targetFormat.value = '';
+                    conversionTimeDisplay.textContent = '00:00';
+                }, 500);
+
+            } catch (error) {
+                stopConversionTimer();
+                conversionErrorMessage.textContent = error.message;
+                conversionErrorMessage.classList.add('show');
+                conversionProgressContainer.classList.remove('show');
+                convertBtn.disabled = false;
+                conversionTimeDisplay.textContent = '00:00';
+            }
+        });
+
+        conversionDownloadBtn.addEventListener('click', () => {
+            if (conversionFilename) {
+                window.location.href = `/download-conversion/${conversionFilename}`;
+            }
+        });
+
+        // OCR functionality
+        const ocrUploadArea = document.getElementById('ocrUploadArea');
+        const ocrFileInput = document.getElementById('ocrFileInput');
+        const ocrFileInfo = document.getElementById('ocrFileInfo');
+        const ocrFileName = document.getElementById('ocrFileName');
+        const ocrFileSize = document.getElementById('ocrFileSize');
+        const ocrBtn = document.getElementById('ocrBtn');
+        const ocrProgressContainer = document.getElementById('ocrProgressContainer');
+        const ocrProgressFill = document.getElementById('ocrProgressFill');
+        const ocrTimeDisplay = document.getElementById('ocrTimeDisplay');
+        const ocrStatusInfo = document.getElementById('ocrStatusInfo');
+        const ocrErrorMessage = document.getElementById('ocrErrorMessage');
+        const ocrResultContainer = document.getElementById('ocrResultContainer');
+        const ocrDownloadBtn = document.getElementById('ocrDownloadBtn');
+        const ocrFinalTime = document.getElementById('ocrFinalTime');
+
+        let ocrSelectedFile = null;
+        let ocrFilename = null;
+        let ocrTimerInterval = null;
+        let ocrStartTime = null;
+
+        ocrUploadArea.addEventListener('click', () => ocrFileInput.click());
+        ocrUploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            ocrUploadArea.classList.add('dragover');
+        });
+        ocrUploadArea.addEventListener('dragleave', () => {
+            ocrUploadArea.classList.remove('dragover');
+        });
+        ocrUploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            ocrUploadArea.classList.remove('dragover');
+            if (e.dataTransfer.files.length > 0) {
+                handleOCRFileSelect(e.dataTransfer.files[0]);
+            }
+        });
+
+        ocrFileInput.addEventListener('change', (e) => {
+            if (e.target.files.length > 0) {
+                handleOCRFileSelect(e.target.files[0]);
+            }
+        });
+
+        function handleOCRFileSelect(file) {
+            ocrSelectedFile = file;
+            ocrFileName.textContent = file.name;
+            ocrFileSize.textContent = formatFileSize(file.size);
+            ocrFileInfo.classList.add('show');
+            ocrBtn.disabled = false;
+            ocrErrorMessage.classList.remove('show');
+            ocrResultContainer.classList.remove('show');
+        }
+
+        function startOCRTimer() {
+            ocrStartTime = Date.now();
+            ocrTimeDisplay.textContent = '00:00';
+            if (ocrTimerInterval) clearInterval(ocrTimerInterval);
+            ocrTimerInterval = setInterval(() => {
+                const elapsed = (Date.now() - ocrStartTime) / 1000;
+                ocrTimeDisplay.textContent = formatTime(elapsed);
+            }, 100);
+        }
+
+        function stopOCRTimer() {
+            if (ocrTimerInterval) {
+                clearInterval(ocrTimerInterval);
+                ocrTimerInterval = null;
+            }
+        }
+
+        ocrBtn.addEventListener('click', async () => {
+            if (!ocrSelectedFile) return;
+
+            ocrErrorMessage.classList.remove('show');
+            ocrResultContainer.classList.remove('show');
+            ocrFinalTime.style.display = 'none';
+            ocrProgressContainer.classList.add('show');
+            ocrBtn.disabled = true;
+            ocrProgressFill.style.width = '20%';
+            ocrStatusInfo.textContent = 'Uploading file...';
+            startOCRTimer();
+
+            const formData = new FormData();
+            formData.append('file', ocrSelectedFile);
+
+            try {
+                ocrProgressFill.style.width = '50%';
+                ocrStatusInfo.textContent = 'Performing OCR...';
+
+                const response = await fetch('/ocr', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                ocrProgressFill.style.width = '90%';
+                ocrStatusInfo.textContent = 'Finalizing...';
+
+                const data = await response.json();
+                stopOCRTimer();
+
+                if (!response.ok) {
+                    throw new Error(data.error || 'OCR failed');
+                }
+
+                ocrProgressFill.style.width = '100%';
+                ocrStatusInfo.textContent = 'Complete!';
+
+                setTimeout(() => {
+                    document.getElementById('ocrResultText').textContent = data.text;
+                    ocrFilename = data.filename;
+                    
+                    if (data.processing_time) {
+                        const minutes = Math.floor(data.processing_time / 60);
+                        const seconds = Math.floor(data.processing_time % 60);
+                        const timeString = minutes > 0 
+                            ? `${minutes} minute${minutes > 1 ? 's' : ''} and ${seconds} second${seconds !== 1 ? 's' : ''}`
+                            : `${seconds} second${seconds !== 1 ? 's' : ''}`;
+                        ocrFinalTime.textContent = `⏱️ OCR completed in ${timeString} (${data.processing_time.toFixed(2)} seconds)`;
+                        ocrFinalTime.style.display = 'block';
+                    }
+                    
+                    ocrResultContainer.classList.add('show');
+                    ocrProgressContainer.classList.remove('show');
+                    ocrBtn.disabled = false;
+                    ocrSelectedFile = null;
+                    ocrFileInfo.classList.remove('show');
+                    ocrFileInput.value = '';
+                    ocrTimeDisplay.textContent = '00:00';
+                }, 500);
+
+            } catch (error) {
+                stopOCRTimer();
+                ocrErrorMessage.textContent = error.message;
+                ocrErrorMessage.classList.add('show');
+                ocrProgressContainer.classList.remove('show');
+                ocrBtn.disabled = false;
+                ocrTimeDisplay.textContent = '00:00';
+            }
+        });
+
+        ocrDownloadBtn.addEventListener('click', () => {
+            if (ocrFilename) {
+                window.location.href = `/download-ocr/${ocrFilename}`;
+            }
+        });
+    </script>
+</body>
+</html>
+

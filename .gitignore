@@ -1,0 +1,54 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+env/
+ENV/
+.venv
+
+# Flask
+instance/
+.webassets-cache
+
+# Uploads and results (but keep .gitkeep files)
+uploads/*
+!uploads/.gitkeep
+transcriptions/*
+!transcriptions/.gitkeep
+conversions/*
+!conversions/.gitkeep
+ocr_results/*
+!ocr_results/.gitkeep
+*.wav
+*.mp3
+*.m4a
+*.flac
+*.ogg
+*.opus
+*.aac
+*.wma
+*.mp4
+*.webm
+*.3gp
+*.amr
+*.aiff
+*.au
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Model cache (optional - remove if you want to track models)
+*.pt
+*.bin
+

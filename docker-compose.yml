@@ -1,0 +1,37 @@
+version: '3.8'
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: audiotranscribe-app
+    ports:
+      - "5012:5012"
+    volumes:
+      # Persist transcriptions, conversions, and OCR results
+      - ./transcriptions:/app/transcriptions
+      - ./conversions:/app/conversions
+      - ./ocr_results:/app/ocr_results
+      # Optional: Mount uploads directory for debugging
+      # - ./uploads:/app/uploads
+    environment:
+      - PYTHONUNBUFFERED=1
+      - FLASK_ENV=production
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:5012/health', timeout=5)"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    # Resource limits (adjust based on your system)
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 4G
+        reservations:
+          cpus: '1.0'
+          memory: 2G
+
